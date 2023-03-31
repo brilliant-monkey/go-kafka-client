@@ -46,7 +46,12 @@ func NewKafkaClient(config types.KafkaClientConfig) *KafkaClient {
 }
 
 func (client *KafkaClient) TestConnection() (err error) {
-	conn, err := kafka.Dial("tcp", client.config.GetBrokers()[0])
+	if len(client.config.GetBrokers()) < 1 {
+		err = errors.New("missing brokers in config")
+		return
+	}
+	broker := client.config.GetBrokers()[0]
+	conn, err := kafka.Dial("tcp", broker)
 	if err != nil {
 		defer conn.Close()
 	}
