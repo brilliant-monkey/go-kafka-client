@@ -45,6 +45,14 @@ func NewKafkaClient(config types.KafkaClientConfig) *KafkaClient {
 	}
 }
 
+func (client *KafkaClient) TestConnection() (err error) {
+	conn, err := kafka.Dial("tcp", client.config.GetBrokers()[0])
+	if err != nil {
+		defer conn.Close()
+	}
+	return
+}
+
 func (client *KafkaClient) Produce(message []byte) (err error) {
 	log.Printf("Producing a message on %s Kafka topic", client.writerConfig.Topic)
 	writer := kafka.NewWriter(client.writerConfig)
@@ -67,12 +75,12 @@ func (client *KafkaClient) Produce(message []byte) (err error) {
 	return
 }
 
-func (client *KafkaClient) Consume(callback func(message []byte) error) {
+func (client *KafkaClient) Consume(callback func(message []byte) error) (err error) {
 	log.Println("Starting Kafka consumer...")
 	r := kafka.NewReader(client.readerConfig)
 	defer func() {
 		log.Println("Closing connection to Kafka...")
-		if err := r.Close(); err != nil {
+		if err = r.Close(); err != nil {
 			log.Printf("Failed to close Kafka reader: %s", err)
 			return
 		}
@@ -84,7 +92,7 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
 			log.Println("An error has occurred reading a Kafka message.", err)
-			break
+			continue
 		}
 		if err = callback(m.Value); err != nil {
 			log.Println("An error has occurred processing a Kafka message.", err)
