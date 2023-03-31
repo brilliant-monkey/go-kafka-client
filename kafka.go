@@ -45,7 +45,7 @@ func NewKafkaClient(config types.KafkaClientConfig) *KafkaClient {
 	}
 }
 
-func (client *KafkaClient) Publish(message []byte) (err error) {
+func (client *KafkaClient) Produce(message []byte) (err error) {
 	writer := kafka.NewWriter(client.writerConfig)
 	writer.AllowAutoTopicCreation = true
 
@@ -68,9 +68,12 @@ func (client *KafkaClient) Publish(message []byte) (err error) {
 func (client *KafkaClient) Consume(callback func(message []byte) error) {
 	r := kafka.NewReader(client.readerConfig)
 	defer func() {
+		log.Println("Closing connection to Kafka...")
 		if err := r.Close(); err != nil {
 			log.Printf("Failed to close Kafka reader: %s", err)
+			return
 		}
+		log.Println("Kafka connection closed.")
 	}()
 
 	for {
