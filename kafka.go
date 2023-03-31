@@ -97,6 +97,7 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
 			log.Println("An error has occurred reading a Kafka message.", err)
+			time.Sleep(time.Millisecond * 250)
 			continue
 		}
 		if err = callback(m.Value); err != nil {
