@@ -62,6 +62,7 @@ func (client *KafkaClient) Produce(message []byte) (err error) {
 			time.Sleep(time.Millisecond * 250)
 			continue
 		}
+		break
 	}
 	return
 }
