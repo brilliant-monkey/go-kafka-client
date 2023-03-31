@@ -46,6 +46,7 @@ func NewKafkaClient(config types.KafkaClientConfig) *KafkaClient {
 }
 
 func (client *KafkaClient) Produce(message []byte) (err error) {
+	log.Printf("Producing a message on %s Kafka topic", client.writerConfig.Topic)
 	writer := kafka.NewWriter(client.writerConfig)
 	writer.AllowAutoTopicCreation = true
 
@@ -66,6 +67,7 @@ func (client *KafkaClient) Produce(message []byte) (err error) {
 }
 
 func (client *KafkaClient) Consume(callback func(message []byte) error) {
+	log.Println("Starting Kafka consumer...")
 	r := kafka.NewReader(client.readerConfig)
 	defer func() {
 		log.Println("Closing connection to Kafka...")
@@ -76,13 +78,15 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) {
 		log.Println("Kafka connection closed.")
 	}()
 
+	log.Println("Listening for Kafka messages...")
 	for {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
+			log.Println("An error has occurred reading a Kafka message.", err)
 			break
 		}
 		if err = callback(m.Value); err != nil {
-			log.Print(err)
+			log.Println("An error has occurred processing a Kafka message.", err)
 		}
 	}
 }
