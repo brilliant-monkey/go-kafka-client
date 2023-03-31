@@ -52,7 +52,7 @@ func (client *KafkaClient) TestConnection() (err error) {
 	}
 	broker := client.config.GetBrokers()[0]
 	conn, err := kafka.Dial("tcp", broker)
-	if err != nil {
+	if err == nil {
 		defer conn.Close()
 	}
 	return
