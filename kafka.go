@@ -22,8 +22,9 @@ func NewKafkaClient(config types.KafkaClientConfig) *KafkaClient {
 		log.Println("Kafka producer config not set.")
 	} else {
 		writerConfig = kafka.WriterConfig{
-			Brokers: config.GetBrokers(),
-			Topic:   *config.GetProducerTopic(),
+			Brokers:  config.GetBrokers(),
+			Topic:    *config.GetProducerTopic(),
+			Balancer: &kafka.RoundRobin{},
 		}
 	}
 
