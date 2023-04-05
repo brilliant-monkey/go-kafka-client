@@ -14,7 +14,8 @@ type KafkaClient struct {
 	config       types.KafkaClientConfig
 	writerConfig kafka.WriterConfig
 	readerConfig kafka.ReaderConfig
-	reader       *kafka.Reader
+	ctx          context.Context
+	cancel       context.CancelFunc
 }
 
 func NewKafkaClient(config types.KafkaClientConfig) *KafkaClient {
@@ -40,11 +41,13 @@ func NewKafkaClient(config types.KafkaClientConfig) *KafkaClient {
 		}
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	return &KafkaClient{
-		config:       config,
-		writerConfig: writerConfig,
-		readerConfig: readerConfig,
-		reader:       nil,
+		config,
+		writerConfig,
+		readerConfig,
+		ctx,
+		cancel,
 	}
 }
 
@@ -85,10 +88,10 @@ func (client *KafkaClient) Produce(message []byte) (err error) {
 
 func (client *KafkaClient) Consume(callback func(message []byte) error) (err error) {
 	log.Println("Starting Kafka consumer...")
-	client.reader = kafka.NewReader(client.readerConfig)
+	r := kafka.NewReader(client.readerConfig)
 	defer func() {
 		log.Println("Closing connection to Kafka...")
-		if err = client.reader.Close(); err != nil {
+		if err = r.Close(); err != nil {
 			log.Printf("Failed to close Kafka reader: %s", err)
 			return
 		}
@@ -97,21 +100,23 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 
 	log.Println("Listening for Kafka messages...")
 	for {
-		m, err := client.reader.ReadMessage(context.Background())
-		if err != nil {
-			log.Println("An error has occurred reading a Kafka message.", err)
-			time.Sleep(time.Millisecond * 250)
-			continue
-		}
-		if err = callback(m.Value); err != nil {
-			log.Println("An error has occurred processing a Kafka message.", err)
+		select {
+		case <-client.ctx.Done():
+			return nil
+		default:
+			m, err := r.ReadMessage(client.ctx)
+			if err != nil {
+				log.Println("An error has occurred reading a Kafka message.", err)
+				return err
+			}
+			if err = callback(m.Value); err != nil {
+				log.Println("An error has occurred processing a Kafka message.", err)
+			}
 		}
 	}
 }
 
 func (client *KafkaClient) Stop() error {
-	if client.reader == nil {
-		return nil
-	}
-	return client.reader.Close()
+	client.cancel()
+	return nil
 }
