@@ -91,8 +91,10 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 	r := kafka.NewReader(client.readerConfig)
 	defer func() {
 		log.Println("Closing connection to Kafka...")
-		if err = r.Close(); err != nil {
+		closeErr := r.Close()
+		if closeErr != nil {
 			log.Printf("Failed to close Kafka reader: %s", err)
+			err = closeErr
 			return
 		}
 		log.Println("Kafka connection closed.")
@@ -105,14 +107,12 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 			log.Println("Hmmm... Context was completed.")
 			return client.ctx.Err()
 		default:
-			log.Println("Reading next message...")
 			m, err := r.ReadMessage(client.ctx)
 			if err != nil {
 				if errors.Is(err, context.Canceled) {
 					log.Println("Kafka received shutdown.")
 					return nil
 				}
-				log.Println("Something has happened...", err)
 				return err
 			}
 
