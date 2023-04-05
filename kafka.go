@@ -102,11 +102,13 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 	for {
 		select {
 		case <-client.ctx.Done():
-			return nil
+			log.Println("Hmmm... Context was completed.")
+			return client.ctx.Err()
 		default:
 			m, err := r.ReadMessage(client.ctx)
 			if err != nil {
 				if errors.Is(err, context.Canceled) {
+					log.Println("Kafka received shutdown.")
 					return nil
 				}
 				return err
