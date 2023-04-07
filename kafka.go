@@ -153,4 +153,5 @@ func (client *KafkaClient) Stop() (err error) {
 		return
 	}
 	log.Println("Kafka connection is shutdown.")
+	return
 }
