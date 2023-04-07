@@ -130,5 +130,6 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 
 func (client *KafkaClient) Stop() (err error) {
 	client.cancel()
-	return
+	<-client.ctx.Done()
+	return client.ctx.Err()
 }
