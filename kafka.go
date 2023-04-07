@@ -89,11 +89,14 @@ func (client *KafkaClient) Produce(message []byte) (err error) {
 
 func (client *KafkaClient) Consume(callback func(message []byte) error) (err error) {
 	done := make(chan struct{})
-	go func() {
-		defer close(done)
 
-		log.Println("Starting Kafka consumer...")
-		r := kafka.NewReader(client.readerConfig)
+	log.Println("Starting Kafka consumer...")
+	r := kafka.NewReader(client.readerConfig)
+	go func() {
+		defer func() {
+			log.Println("closing channel")
+			close(done)
+		}()
 
 		log.Println("Listening for Kafka messages...")
 		for {
