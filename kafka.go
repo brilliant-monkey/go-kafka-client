@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"errors"
+	"io"
 	"log"
 	"time"
 
@@ -107,6 +108,9 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 					if errors.Is(err, context.Canceled) {
 						log.Println("Kafka received shutdown.")
 						return
+					} else if err == io.EOF {
+						log.Println("Kafka:", err)
+						continue
 					}
 					log.Println("An error occurred reading message from Kafka: ", err)
 					return
