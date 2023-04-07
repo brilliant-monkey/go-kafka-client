@@ -108,6 +108,7 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 						log.Println("Kafka received shutdown.")
 						return
 					}
+					log.Println("An error occurred reading message from Kafka: ", err)
 					return
 				}
 
