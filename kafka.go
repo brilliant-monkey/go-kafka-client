@@ -96,6 +96,15 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 	}
 
 	go func() {
+		defer func() {
+			log.Println("Closing Kafka connection...")
+			closeErr := r.Close()
+			if closeErr != nil {
+				log.Println("An error occurred while closing the Kafka connection: ", err)
+			}
+			log.Println("Kafka connection closed.")
+		}()
+
 		log.Printf("Listening for Kafka messages on %s...", r.Config().Topic)
 		for {
 			select {
