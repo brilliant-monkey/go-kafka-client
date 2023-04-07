@@ -88,14 +88,14 @@ func (client *KafkaClient) Produce(message []byte) (err error) {
 }
 
 func (client *KafkaClient) Consume(callback func(message []byte) error) (err error) {
-	log.Println("Starting Kafka consumer...")
-	r := kafka.NewReader(client.readerConfig)
-
-	log.Println("Listening for Kafka messages...")
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 
+		log.Println("Starting Kafka consumer...")
+		r := kafka.NewReader(client.readerConfig)
+
+		log.Println("Listening for Kafka messages...")
 		for {
 			select {
 			case <-client.ctx.Done():
@@ -103,7 +103,7 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 				return
 			default:
 				log.Println("Waiting for message...")
-				m, err := r.ReadMessage(client.ctx)
+				m, err := r.ReadMessage(context.Background())
 				if err != nil {
 					if errors.Is(err, context.Canceled) {
 						log.Println("Kafka received shutdown.")
