@@ -89,7 +89,39 @@ func (client *KafkaClient) Produce(message []byte) (err error) {
 func (client *KafkaClient) Consume(callback func(message []byte) error) (err error) {
 	log.Println("Starting Kafka consumer...")
 	r := kafka.NewReader(client.readerConfig)
-	defer func() {
+
+	log.Println("Listening for Kafka messages...")
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		for {
+			select {
+			case <-client.ctx.Done():
+				log.Println("Hmmm... Context was completed.")
+				return
+			default:
+				log.Println("Waiting for message...")
+				m, err := r.ReadMessage(client.ctx)
+				if err != nil {
+					if errors.Is(err, context.Canceled) {
+						log.Println("Kafka received shutdown.")
+						return
+					}
+					return
+				}
+
+				if err = callback(m.Value); err != nil {
+					log.Println("An error has occurred processing a Kafka message.", err)
+				}
+			}
+		}
+	}()
+
+	select {
+	case <-done:
+		return nil
+	case <-client.ctx.Done():
 		log.Println("Closing connection to Kafka...")
 		closeErr := r.Close()
 		if closeErr != nil {
@@ -98,28 +130,7 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 			return
 		}
 		log.Println("Kafka connection closed.")
-	}()
-
-	log.Println("Listening for Kafka messages...")
-	for {
-		select {
-		case <-client.ctx.Done():
-			log.Println("Hmmm... Context was completed.")
-			return client.ctx.Err()
-		default:
-			m, err := r.ReadMessage(client.ctx)
-			if err != nil {
-				if errors.Is(err, context.Canceled) {
-					log.Println("Kafka received shutdown.")
-					return nil
-				}
-				return err
-			}
-
-			if err = callback(m.Value); err != nil {
-				log.Println("An error has occurred processing a Kafka message.", err)
-			}
-		}
+		return client.ctx.Err()
 	}
 }
 
