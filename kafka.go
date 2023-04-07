@@ -94,8 +94,9 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 	if err != nil {
 		return
 	}
+
 	go func() {
-		log.Println("Listening for Kafka messages...")
+		log.Printf("Listening for Kafka messages on %s...", r.Config().Topic)
 		for {
 			select {
 			case <-client.ctx.Done():
