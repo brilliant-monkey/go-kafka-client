@@ -152,6 +152,7 @@ func (client *KafkaClient) Stop() (err error) {
 		log.Println("An error occurred while shutting down the Kafka connection:", err)
 		return
 	}
+	time.Sleep(5000)
 	log.Println("Kafka connection is shutdown.")
 	return
 }
