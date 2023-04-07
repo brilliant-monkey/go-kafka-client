@@ -138,7 +138,14 @@ func (client *KafkaClient) Consume(callback func(message []byte) error) (err err
 }
 
 func (client *KafkaClient) Stop() (err error) {
+	log.Println("Shutting down Kafka connection...")
 	client.cancel()
 	<-client.ctx.Done()
-	return client.ctx.Err()
+	err = client.ctx.Err()
+	if err != nil {
+		log.Println("An error occurred while shutting down the Kafka connection:", err)
+		return
+	}
+	log.Println("Kafka connection is shutdown.")
+	return
 }
